@@ -64,7 +64,9 @@ app.all("*", async function (req, res, next) {
         method: req.method,
         url,
         body: req.body,
-        headers: req.headers
+        headers: req.headers?.authorization
+          ? { Authorization: req.headers?.authorization }
+          : {},
       });
 
       return res.status(200).send(response.data);
