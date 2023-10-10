@@ -61,7 +61,7 @@ app.all('*', async function(req, res, next) {
         method: req.method,
         url,
         body: req.body,
-
+        headers: req.headers
       });
 
 
