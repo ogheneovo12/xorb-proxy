@@ -31,10 +31,13 @@ app.all("*", async function (req, res, next) {
 
   if (req.method === "OPTIONS") {
     // CORS Preflight
-    res.send();
+    res.status(200).send();
   } else {
     const { url: targetUrl, ...otherParams } = req.query;
     const validUrlParts = stringIsAValidUrl(targetUrl);
+    const authHeader = req.headers?.authorization
+      ? { Authorization: req.headers?.authorization }
+      : {};
 
     if (!validUrlParts) {
       res.status(500).send({ error: "There is no valid url in the  request" });
@@ -64,9 +67,10 @@ app.all("*", async function (req, res, next) {
         method: req.method,
         url,
         body: req.body,
-        headers: req.headers?.authorization
-          ? { Authorization: req.headers?.authorization }
-          : {},
+        headers: {
+          "Content-Type": req.header["content-type"],
+          ...authHeader,
+        },
       });
 
       return res.status(200).send(response.data);
