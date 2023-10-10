@@ -57,6 +57,7 @@ app.all('*', async function(req, res, next) {
 
     try {
        console.log(url);
+        console.log(req.headers)
       const response = await axios({
         method: req.method,
         url,
