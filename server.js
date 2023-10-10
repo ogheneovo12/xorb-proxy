@@ -64,7 +64,7 @@ app.all("*", async function (req, res, next) {
         method: req.method,
         url,
         body: req.body,
-      
+        headers: req.headers
       });
 
       return res.status(200).send(response.data);
