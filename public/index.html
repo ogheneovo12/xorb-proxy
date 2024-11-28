@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Xorb Proxy - CORS Proxy by Xorbious</title>
+      <meta name="title" content="Xorb Proxy - CORS Proxy Solution" />
+      <meta
+        name="description"
+        content="Xorb Proxy is a Flexible and secure CORS proxy service by Xorbious for seamless API requests"
+      />
+      <meta
+        name="keywords"
+        content="CORS proxy, API proxy, web development, cross-origin, xorbious, axios, Cors, CORS, fetch, cors error"
+      />
+      <meta name="author" content="Xorbious" />
+
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://xorb-proxy.xorbious.com/" />
+      <meta property="og:title" content="Xorb Proxy - CORS Proxy Solution" />
+      <meta
+        property="og:description"
+        content="Flexible and secure CORS proxy service by Xorbious for seamless API requests"
+      />
+      <meta property="og:image" content="https://xorb-proxy.xorbious.com/" />
+
+      <meta property="twitter:card" content="summary_large_image" />
+      <meta property="twitter:url" content="https://xorb-proxy.xorbious.com/" />
+      <meta
+        property="twitter:title"
+        content="Xorb Proxy - CORS Proxy Solution"
+      />
+      <meta
+        property="twitter:description"
+        content="Flexible and secure CORS proxy service by Xorbious for seamless API requests"
+      />
+      <meta property="twitter:image" content="/img/xorb-proxy-logo.svg" />
+      <link rel="icon" type="image/x-icon" href="/img/xorb-proxy-logo.svg" />
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+        rel="stylesheet"
+      />
+      <style>
+        pre {
+          background-color: #f4f4f4;
+          padding: 15px;
+          border-radius: 5px;
+        }
+        .code-example {
+          background-color: #f8f9fa;
+          border-left: 4px solid #007bff;
+          padding: 15px;
+          margin-bottom: 20px;
+        }
+        .logo {
+          max-width: 150px;
+          margin-bottom: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container mt-5">
+        <header class="text-center mb-5">
+          <img
+            src="/img/xorb-proxy-logo.svg"
+            alt="Xorb Proxy Logo"
+            class="logo"
+          />
+
+          <h1 class="mb-3">Xorb Proxy</h1>
+          <p class="lead text-muted">
+            Secure CORS Proxy by
+            <a href="https://xorbious.com" target="_blank">Xorbious</a>
+          </p>
+
+          <div class="mt-3">
+            <a
+              href="https://github.com/ogheneovo12/xorb-proxy"
+              class="btn btn-dark me-2"
+              target="_blank"
+            >
+              <i class="bi bi-github me-1"></i>GitHub
+            </a>
+          </div>
+        </header>
+
+        <div class="alert alert-info" role="alert">
+          <strong>Important:</strong> This CORS proxy is designed to help you
+          bypass cross-origin restrictions when making API requests.
+        </div>
+        <section class="mb-5">
+          <h2 class="mb-3">1. Basic Usage</h2>
+          <p>
+            To use the CORS proxy, send requests to <code>/proxy</code> endpoint
+            with the target URL as a query parameter.
+          </p>
+
+          <div class="code-example">
+            <h4>Example Request</h4>
+            <pre><code>https://xorb-proxy.xorbious.com/proxy?url=https://api.example.com/data</code></pre>
+          </div>
+        </section>
+
+        <section class="mb-5">
+          <h2 class="mb-3">2. Supported HTTP Methods</h2>
+          <ul class="list-group">
+            <li class="list-group-item">GET</li>
+            <li class="list-group-item">POST</li>
+            <li class="list-group-item">PUT</li>
+            <li class="list-group-item">DELETE</li>
+            <li class="list-group-item">OPTIONS</li>
+          </ul>
+        </section>
+
+        <section class="mb-5">
+          <h2 class="mb-3">3. Query Parameters</h2>
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+                <th>Required</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>url</code></td>
+                <td>Full URL of the target API endpoint</td>
+                <td>✓ Yes</td>
+              </tr>
+              <tr>
+                <td><em>Additional Parameters</em></td>
+                <td>Any extra query parameters for the target URL</td>
+                <td>Optional</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="mb-5">
+          <h2 class="mb-3">4. Supported Headers</h2>
+          <p>
+            by default the proxy will try to access the following headers if
+            they are present in the request headers
+          </p>
+          <ul class="list-group">
+            <li class="list-group-item">Content-Type</li>
+            <li class="list-group-item">Authorization</li>
+            <li class="list-group-item">Accept</li>
+            <li class="list-group-item">UserAgent</li>
+            <li class="list-group-item">Refferer</li>
+            <li class="list-group-item">X-Requested-With</li>
+          </ul>
+          <p>
+            Incase you want the proxy, to access some extra headers from the
+            request header, you can pass in an extra query params called
+            extraHeaders, with the key of the headers you want comma delimitted.
+            see <a href="#extra-headers">example</a>
+          </p>
+        </section>
+
+        <section class="mb-5">
+          <h2 class="mb-3">4. Code Examples</h2>
+
+          <div class="card mb-3">
+            <div class="card-header">JavaScript Fetch Example</div>
+            <div class="card-body">
+              <pre><code>
+fetch('https://xorb-proxy.xorbious.com/proxy?url=https://api.example.com/users', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json'
+    }
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch(error => console.error('Error:', error));
+                    </code></pre>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">Axios Example</div>
+            <div class="card-body">
+              <pre><code>
+axios.get('https://xorb-proxy.xorbious.com/proxy', {
+    params: {
+        url: 'https://api.example.com/data',
+        extraParam: 'value'
+    }
+})
+.then(response => console.log(response.data))
+.catch(error => console.error('Error:', error));
+                    </code></pre>
+            </div>
+          </div>
+
+          <div id="extra-headers" class="card">
+            <div class="card-header">Extra Header Example</div>
+            <div class="card-body">
+              <pre><code>
+axios.get('https://xorb-proxy.xorbious.com/proxy', {
+    params: {
+        url: 'https://api.example.com/data',
+        extraParam: 'value',
+        extraHeaders:"x-custom-header1,x-custom-header2,Cookie" // case insensitive
+    },
+    headers:{
+        x-custom-header1:"a custom header value 1",
+        x-custom-header2:"a custom header value 2",
+        //or any other not specified in the defaults
+        Cookie: "name=value; name2=value2; name3=value3"
+    }
+})
+.then(response => console.log(response.data))
+.catch(error => console.error('Error:', error));
+                    </code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-5">
+          <h2 class="mb-3">5. Limitations & Restrictions</h2>
+          <div class="alert alert-warning">
+            <ul>
+              <li>Maximum request body size: 100KB</li>
+              <li>Rate limited to 100 requests per 15 minutes per IP</li>
+              <li>Only HTTPS URLs are recommended</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="mb-5">
+          <h2 class="mb-3">6. Error Handling</h2>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Status Code</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>400</td>
+                <td>Invalid or missing URL</td>
+              </tr>
+              <tr>
+                <td>403</td>
+                <td>Origin not allowed (if restrictions are enabled)</td>
+              </tr>
+              <tr>
+                <td>500</td>
+                <td>Internal server error</td>
+              </tr>
+              <tr>
+                <td>504</td>
+                <td>Gateway timeout</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <footer class="mt-5 pt-3 border-top text-center">
+          <p class="text-muted">
+            © 2024 Xorb Proxy by Xorbious. All Rights Reserved.
+          </p>
+          <div class="d-flex justify-content-center gap-3">
+            <a href="https://xorbious.com" target="_blank" class="text-muted"
+              >Website</a
+            >
+            <a
+              href="https://github.com/ogheneovo12"
+              target="_blank"
+              class="text-muted"
+              >GitHub</a
+            >
+            <a href="mailto:xorbious@gmail.com" class="text-muted">Contact</a>
+          </div>
+        </footer>
+      </div>
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+      />
+    </body>
+  </html>
+</html>

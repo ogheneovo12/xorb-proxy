@@ -1,90 +1,163 @@
-var express = require("express"),
-  axios = require("axios"),
-  bodyParser = require("body-parser");
+const express = require("express");
+const axios = require("axios");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const { URL } = require("url");
+const path = require("path");
 
-const URL = require("url").URL;
+const app = express();
 
-const stringIsAValidUrl = (s) => {
+// Proxy Configurations
+const PORT = process.env.PORT || 5500;
+const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || "100kb";
+const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = process.env.RATE_LIMIT_MAX || 100; // Limit requests per window
+const PROXY_TIMEOUT = process.env.PROXY_TIMEOUT || 10000; // 10 seconds
+
+// Serve webpage from 'public' directory
+app.use(express.static(path.join(__dirname, "public")));
+
+// Security middleware
+app.use(helmet());
+
+// Rate limiting to prevent abuse
+app.use(
+  rateLimit({
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    max: RATE_LIMIT_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
+
+// Middleware for JSON parsing - migrated from body parser
+app.use(
+  express.json({
+    limit: REQUEST_BODY_LIMIT,
+  })
+);
+
+const getEssentialHeaders = (req) => {
+  const allowedHeaders = [
+    "content-type",
+    "authorization",
+    "accept",
+    "user-agent",
+    "referer",
+    "x-requested-with",
+  ];
+
+  const essentialHeaders = Object.keys(req.headers)
+    .filter((header) => allowedHeaders.includes(header.toLowerCase()))
+    .reduce((acc, header) => {
+      acc[header] = req.headers[header];
+      return acc;
+    }, {});
+
+  return essentialHeaders;
+};
+
+// Middleware to validate and parse URL
+const validateUrl = (req, res, next) => {
+  const { url: targetUrl, extraHeaders, ...queryParams } = req.query;
+
+  if (!targetUrl) {
+    return res.status(400).json({ error: 'Missing "url" query parameter.' });
+  }
+
   try {
-    new URL(s);
-    return s.split("?");
-  } catch (err) {
-    return false;
+    const parsedUrl = new URL(targetUrl);
+
+    req.validatedUrl = parsedUrl;
+    req.queryParams = queryParams;
+    req.extraHeaders = extraHeaders
+      ? extraHeaders.split(",").map((header) => header.trim())
+      : [];
+
+    next();
+  } catch (error) {
+    return res.status(400).json({ error: "Invalid URL format." });
   }
 };
 
-app = express();
-
-var myLimit = typeof process.argv[2] != "undefined" ? process.argv[2] : "100kb";
-console.log("Using limit: ", myLimit);
-
-app.use(bodyParser.json({ limit: myLimit }));
-
-app.all("*", async function (req, res, next) {
-  // Set CORS headers: allow all origins, methods, and headers: you may want to lock this down in a production environment
+// CORS configuration
+app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, PUT, PATCH, POST, DELETE");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header(
     "Access-Control-Allow-Headers",
-    req.header("access-control-request-headers")
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
 
   if (req.method === "OPTIONS") {
-    // CORS Preflight
-    res.status(200).send();
-  } else {
-    const { url: targetUrl, ...otherParams } = req.query;
-    const validUrlParts = stringIsAValidUrl(targetUrl);
-    const authHeader = req.headers?.authorization
-      ? { Authorization: req.headers?.authorization }
-      : {};
+    return res.sendStatus(200); // Handle preflight requests
+  }
+  next();
+});
 
-    if (!validUrlParts) {
-      res.status(500).send({ error: "There is no valid url in the  request" });
-      return;
-    }
+// Proxy route
+app.all("/proxy", validateUrl, async (req, res, next) => {
+  try {
+    const { validatedUrl, queryParams } = req;
 
-    let initialQuery = validUrlParts[1] ? validUrlParts[1]?.split("=") : "";
+    // Construct query string
+    const query = new URLSearchParams(queryParams).toString();
+    const fullUrl = `${validatedUrl.origin}${validatedUrl.pathname}${
+      query ? "?" + query : ""
+    }`;
 
-    if (Array.isArray(initialQuery)) {
-      initialQuery = `${initialQuery[0]}=${encodeURIComponent(
-        initialQuery[1]
-      )}`;
-    }
+    // Prepare headers
+    let essentialHeaders = getEssentialHeaders(req);
 
-    const queries = Object.keys(otherParams).reduce(
-      (acc, curr) => {
-        return (acc += `${curr}=${encodeURIComponent(otherParams[curr])}&`);
-      },
-      initialQuery ? initialQuery + "&" : initialQuery
-    );
+    req.extraHeaders.forEach((headerKey) => {
+      if (req.get(headerKey)) {
+        essentialHeaders[headerKey] = req.get(headerKey);
+      }
+    });
 
-    const url = validUrlParts[0] + "?" + queries.slice(0, -1);
+    // Forward the request
+    const response = await axios({
+      method: req.method,
+      url: fullUrl,
+      data: req.body,
+      headers: essentialHeaders,
+      timeout: PROXY_TIMEOUT,
+      validateStatus: (status) => status >= 200 && status < 600, // Accept all status codes
+    });
 
-    try {
-      console.log(url);
-      const response = await axios({
-        method: req.method,
-        url,
-        body: req.body,
-        headers: {
-          "Content-Type": req.header["content-type"],
-          ...authHeader,
-        },
-      });
-
-      return res.status(200).send(response.data);
-    } catch (err) {
-      console.log(err?.response?.data || err?.message);
-      return res
-        .status(err?.response?.statusCode || 500)
-        .send(err?.response?.data || err?.message);
-    }
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    next(error); // Forward error to the centralized error handler
   }
 });
 
-app.set("port", process.env.PORT || 5000);
+// Centralized error handling middleware
+app.use((error, req, res, next) => {
+  console.error("Error:", error.message);
 
-app.listen(app.get("port"), function () {
-  console.log("Proxy server listening on port " + app.get("port"));
+  if (error.response) {
+    // Errors from the proxied server
+    res.status(error.response.status).json({
+      error: error.response.data || "Error from proxied server.",
+      status: error.response.status,
+    });
+  } else if (error.request) {
+    // No response received from the proxied server
+    res.status(504).json({ error: "No response from proxied server." });
+  } else {
+    // Other errors (e.g., validation, timeout)
+    res.status(500).json({ error: error.message || "Internal Server Error." });
+  }
 });
+
+// Handle 404 errors and redirect to the home page
+app.use((req, res) => {
+  res.redirect('/');
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Proxy server running on port ${PORT}`);
+});
+
+module.exports = app;
