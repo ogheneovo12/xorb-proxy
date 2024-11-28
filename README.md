@@ -79,7 +79,6 @@ axios.get('https://xorb-proxy.xorbious.com/proxy', {
 
 - Rate limited to prevent abuse
 - URL validation
-- Configurable origin whitelisting
 - Helmet.js for HTTP header security
 
 ## 💻 Run Locally
