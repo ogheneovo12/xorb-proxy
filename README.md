@@ -4,7 +4,7 @@
 
 Xorb Proxy is a robust, secure, and flexible CORS (Cross-Origin Resource Sharing) proxy server that enables seamless API requests across different domains. Designed for developers who need to overcome cross-origin limitations, Xorb Proxy provides a simple, configurable solution for proxying HTTP requests.
 
-![Xorb Proxy Banner](https://xorb-proxy.xorbious.com/xorb-proxy-banner.svg)
+![Xorb Proxy Banner](https://xorb-proxy.xorbious.com/img/xorb-proxy-banner.svg)
 
 ## ✨ Features
 
